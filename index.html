@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Day Time Tracker</title>
+
+  <!-- Important for mobile scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Makes the top bar color match your app -->
+  <meta name="theme-color" content="#6366f1" />
+
+  <!-- Tell Android browsers this is a PWA -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- iOS: open as standalone app (no Safari UI) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="My Day Tracker" />
+
+  <!-- iOS home screen icon (you can change this later) -->
+  <link rel="apple-touch-icon" href="icon-192.png" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb);
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 10px;
+      color: #1f2933;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 1100px;
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 18px;
+      padding: 14px 14px 18px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #111827;
+    }
+
+    .title-badge {
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #f97316;
+      color: #fff;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .today-info {
+      text-align: right;
+      font-size: 0.8rem;
+      color: #4b5563;
+    }
+
+    .today-info strong {
+      display: block;
+      font-size: 0.9rem;
+      color: #111827;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 1fr; /* MOBILE FIRST: single column */
+      gap: 10px;
+    }
+
+    /* On larger screens, switch to 2 columns */
+    @media (min-width: 900px) {
+      main {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr);
+        gap: 16px;
+      }
+      .today-info {
+        text-align: right;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 6px;
+      }
+      .app {
+        border-radius: 12px;
+        padding: 10px 10px 14px;
+      }
+    }
+
+    /* Timer section */
+    .timer-card {
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      border-radius: 16px;
+      padding: 10px 12px 12px;
+      color: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .timer-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at -10% -10%, #facc15 0, transparent 45%),
+        radial-gradient(circle at 110% 110%, #ec4899 0, transparent 40%);
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    .timer-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .current-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      opacity: 0.9;
+      font-weight: 600;
+    }
+
+    .current-activity {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+
+    .timer-display {
+      margin-top: 6px;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .timer-subrow {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      opacity: 0.95;
+    }
+
+    .timer-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.25);
+      font-size: 0.72rem;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    .timer-note {
+      margin-top: 6px;
+      font-size: 0.72rem;
+      opacity: 0.9;
+    }
+
+    /* Columns wrappers */
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    @media (min-width: 900px) {
+      .col {
+        gap: 14px;
+      }
+    }
+
+    /* Panels */
+    .panel {
+      background: #f9fafb;
+      border-radius: 14px;
+      padding: 10px 10px 12px;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 130px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #111827;
+    }
+
+    .panel-subtitle {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .badge-soft {
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #4f46e5;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Activity form & buttons */
+    .activity-form {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .activity-form input {
+      flex: 1;
+      padding: 7px 9px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .activity-form input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 13px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      box-shadow: 0 6px 14px rgba(79, 70, 229, 0.35);
+    }
+
+    .btn-ghost {
+      background: #fff;
+      color: #111827;
+      border: 1px solid #e5e7eb;
+    }
+
+    .btn-sm {
+      padding: 6px 11px;
+      font-size: 0.8rem;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      box-shadow: none;
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: none;
+    }
+
+    .btn[disabled] {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    /* Activities list */
+    .activities-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    @media (min-width: 600px) {
+      .activities-list {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      }
+    }
+
+    .activity-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 7px 8px 8px;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 60px;
+      position: relative;
+    }
+
+    .activity-card.running {
+      border-color: #22c55e;
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
+    }
+
+    .activity-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #111827;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .activity-pill {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .activity-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .activity-mini-time {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .mini-label {
+      font-size: 0.7rem;
+      color: #9ca3af;
+    }
+
+    /* Log section */
+    .table-wrap {
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      overflow: hidden;
+      max-height: 210px;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+
+    thead {
+      background: #f3f4f6;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    th,
+    td {
+      padding: 5px 6px;
+      text-align: left;
+      border-bottom: 1px solid #f3f4f6;
+      white-space: nowrap;
+    }
+
+    th {
+      font-weight: 600;
+      font-size: 0.7rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    .empty-state {
+      padding: 8px;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      text-align: center;
+    }
+
+    /* Analytics */
+    .analytics-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .analytics-row {
+      display: grid;
+      grid-template-columns: 0.9fr 2.1fr auto;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+    }
+
+    .analytics-name {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .analytics-bar-wrap {
+      background: #e5e7eb;
+      border-radius: 999px;
+      height: 9px;
+      overflow: hidden;
+    }
+
+    .analytics-bar {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #f97316, #fb7185);
+      transition: width 0.25s ease-out;
+    }
+
+    .analytics-time {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .analytics-total {
+      margin-top: 4px;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #ecfeff;
+      font-size: 0.7rem;
+      color: #0f766e;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    .helper-text {
+      font-size: 0.72rem;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <span>My Day Tracker</span>
+        <span class="title-badge">v1</span>
+      </div>
+      <div class="today-info">
+        <strong id="today-day"></strong>
+        <span id="today-date"></span>
+      </div>
+    </header>
+
+    <main>
+      <!-- LEFT / TOP COLUMN: TIMER + ACTIVITIES -->
+      <div class="col">
+        <section class="timer-card">
+          <div class="timer-inner">
+            <div class="current-label">Currently</div>
+            <div class="current-activity" id="current-activity-text">
+              No activity running
+            </div>
+            <div class="timer-display" id="timer-display">00:00:00</div>
+            <div class="timer-subrow">
+              <span id="current-time-range">Start – End</span>
+              <span class="timer-chip" id="timer-status-chip">
+                <span class="dot" id="status-dot" style="display: none;"></span>
+                <span id="status-text">Idle</span>
+              </span>
+            </div>
+            <div class="timer-note">
+              Tip: Keep this tab open and just tap <strong>Start / Stop</strong>
+              on the activity cards as you go through your day.
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">
+                Activities
+                <span class="badge-soft">your day in buckets</span>
+              </div>
+              <div class="panel-subtitle">
+                Add the things you usually do and tap start when you begin.
+              </div>
+            </div>
+          </div>
+
+          <form class="activity-form" id="activity-form">
+            <input
+              id="activity-input"
+              type="text"
+              placeholder="Add new activity (e.g. Reading, Deep Work)"
+              autocomplete="off"
+            />
+            <button type="submit" class="btn btn-primary btn-sm">
+              + Add
+            </button>
+          </form>
+
+          <div class="activities-list" id="activities-list"></div>
+          <p class="helper-text">
+            Only <strong>one</strong> activity can run at a time. Switching
+            activities will stop the current one.
+          </p>
+        </section>
+      </div>
+
+      <!-- RIGHT / BOTTOM COLUMN: LOG + ANALYTICS -->
+      <div class="col">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">
+                Today’s Sessions
+              </div>
+              <div class="panel-subtitle">
+                Every start & stop is logged with date, time and duration.
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrap" id="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Activity</th>
+                  <th>Date</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Duration</th>
+                </tr>
+              </thead>
+              <tbody id="sessions-body">
+                <!-- rows injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">
+                Today’s Analytics
+              </div>
+              <div class="panel-subtitle">
+                How you actually spent your hours today.
+              </div>
+            </div>
+            <div class="pill">
+              <span class="pill-dot"></span> LIVE
+            </div>
+          </div>
+
+          <div class="analytics-list" id="analytics-list"></div>
+          <div class="analytics-total" id="analytics-total"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ======== DATA & STATE ========
+    const STORAGE_KEY = "simpleTimeTrackerData_v1";
+
+    const DEFAULT_ACTIVITIES = [
+      "Exercise",
+      "Study",
+      "Work",
+      "Play",
+      "Eat",
+      "Sleep",
+      "Travel",
+      "Others",
+    ];
+
+    let data = {
+      activities: [],
+      sessions: [], // { id, activity, start, end }
+    };
+
+    let currentSessionId = null;
+    let timerIntervalId = null;
+
+    // ======== HELPERS ========
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function loadData() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          data = JSON.parse(raw);
+        } catch (e) {
+          console.error("Failed to parse stored data, resetting.", e);
+          data = { activities: [], sessions: [] };
+        }
+      }
+      if (!Array.isArray(data.activities) || data.activities.length === 0) {
+        data.activities = [...DEFAULT_ACTIVITIES];
+      }
+      if (!Array.isArray(data.sessions)) {
+        data.sessions = [];
+      }
+    }
+
+    function formatHMS(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      const pad = (v) => String(v).padStart(2, "0");
+      return `${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+
+    function formatHM(ms) {
+      const totalMinutes = Math.floor(ms / 60000);
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+      const pad = (v) => String(v).padStart(2, "0");
+      return `${pad(h)}h ${pad(m)}m`;
+    }
+
+    function formatTime(t) {
+      const d = t instanceof Date ? t : new Date(t);
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function formatDate(t) {
+      const d = t instanceof Date ? t : new Date(t);
+      return d.toLocaleDateString([], {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+      });
+    }
+
+    function formatDay(t) {
+      const d = t instanceof Date ? t : new Date(t);
+      return d.toLocaleDateString([], { weekday: "long" });
+    }
+
+    function isSameDay(a, b) {
+      return (
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate()
+      );
+    }
+
+    function getTodaySessions() {
+      const today = new Date();
+      return data.sessions.filter((s) =>
+        isSameDay(new Date(s.start), today)
+      );
+    }
+
+    function getSessionById(id) {
+      return data.sessions.find((s) => s.id === id);
+    }
+
+    function getRunningSession() {
+      return data.sessions.find((s) => !s.end);
+    }
+
+    // ======== RENDER UI ========
+
+    const todayDayEl = document.getElementById("today-day");
+    const todayDateEl = document.getElementById("today-date");
+    const currentActivityTextEl = document.getElementById(
+      "current-activity-text"
+    );
+    const timerDisplayEl = document.getElementById("timer-display");
+    const currentTimeRangeEl = document.getElementById("current-time-range");
+    const timerStatusChipEl = document.getElementById("timer-status-chip");
+    const statusDotEl = document.getElementById("status-dot");
+    const statusTextEl = document.getElementById("status-text");
+
+    const activitiesListEl = document.getElementById("activities-list");
+    const sessionsBodyEl = document.getElementById("sessions-body");
+    const analyticsListEl = document.getElementById("analytics-list");
+    const analyticsTotalEl = document.getElementById("analytics-total");
+
+    function renderTodayHeader() {
+      const now = new Date();
+      todayDayEl.textContent = formatDay(now);
+      todayDateEl.textContent = now.toLocaleDateString([], {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+
+    function renderActivities() {
+      activitiesListEl.innerHTML = "";
+      if (!data.activities || data.activities.length === 0) return;
+
+      const todaySessions = getTodaySessions();
+
+      data.activities.forEach((activity) => {
+        const card = document.createElement("div");
+        card.className = "activity-card";
+        card.dataset.name = activity;
+
+        const runningSession = getRunningSession();
+        const isRunning = runningSession && runningSession.activity === activity;
+
+        if (isRunning) {
+          card.classList.add("running");
+        }
+
+        const header = document.createElement("div");
+        header.className = "activity-name";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = activity;
+
+        const countSpan = document.createElement("span");
+        countSpan.className = "activity-pill";
+        const count = todaySessions.filter((s) => s.activity === activity)
+          .length;
+        countSpan.textContent = count ? `${count}× today` : "Not yet";
+
+        header.appendChild(nameSpan);
+        header.appendChild(countSpan);
+
+        const footer = document.createElement("div");
+        footer.className = "activity-footer";
+
+        const mini = document.createElement("div");
+        mini.className = "activity-mini-time";
+
+        const totalMs = todaySessions
+          .filter((s) => s.activity === activity && s.end)
+          .reduce(
+            (sum, s) =>
+              sum + (new Date(s.end).getTime() - new Date(s.start).getTime()),
+            0
+          );
+
+        mini.innerHTML = totalMs
+          ? `<span class="mini-label">Today:</span> ${formatHM(totalMs)}`
+          : `<span class="mini-label">Today:</span> 00h 00m`;
+
+        const btn = document.createElement("button");
+        btn.className = "btn btn-ghost btn-sm";
+        btn.textContent = isRunning ? "Stop" : "Start";
+        btn.addEventListener("click", () => {
+          if (isRunning) {
+            stopCurrentSession();
+          } else {
+            startSession(activity);
+          }
+        });
+
+        footer.appendChild(mini);
+        footer.appendChild(btn);
+
+        card.appendChild(header);
+        card.appendChild(footer);
+
+        activitiesListEl.appendChild(card);
+      });
+    }
+
+    function renderSessionsTable() {
+      sessionsBodyEl.innerHTML = "";
+      const todaySessions = getTodaySessions();
+
+      if (todaySessions.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.className = "empty-state";
+        td.textContent = "No sessions tracked yet today. Start any activity!";
+        tr.appendChild(td);
+        sessionsBodyEl.appendChild(tr);
+        return;
+      }
+
+      todaySessions
+        .slice()
+        .sort((a, b) => new Date(a.start) - new Date(b.start))
+        .forEach((s) => {
+          const tr = document.createElement("tr");
+
+          const tdAct = document.createElement("td");
+          tdAct.textContent = s.activity;
+
+          const tdDate = document.createElement("td");
+          tdDate.textContent = `${formatDay(s.start).slice(
+            0,
+            3
+          )}, ${formatDate(s.start)}`;
+
+          const tdStart = document.createElement("td");
+          tdStart.textContent = formatTime(s.start);
+
+          const tdEnd = document.createElement("td");
+          tdEnd.textContent = s.end ? formatTime(s.end) : "Running…";
+
+          const tdDur = document.createElement("td");
+          if (s.end) {
+            const durMs =
+              new Date(s.end).getTime() - new Date(s.start).getTime();
+            tdDur.textContent = formatHM(durMs);
+          } else {
+            const durMs = Date.now() - new Date(s.start).getTime();
+            tdDur.textContent = formatHM(durMs);
+          }
+
+          tr.appendChild(tdAct);
+          tr.appendChild(tdDate);
+          tr.appendChild(tdStart);
+          tr.appendChild(tdEnd);
+          tr.appendChild(tdDur);
+          sessionsBodyEl.appendChild(tr);
+        });
+    }
+
+    function renderAnalytics() {
+      analyticsListEl.innerHTML = "";
+      analyticsTotalEl.textContent = "";
+
+      const todaySessions = getTodaySessions();
+      const finished = todaySessions.filter((s) => s.end);
+
+      if (finished.length === 0) {
+        analyticsListEl.innerHTML =
+          '<div class="empty-state">Finish at least one session to see your analytics.</div>';
+        return;
+      }
+
+      const totals = {};
+      finished.forEach((s) => {
+        const dur =
+          new Date(s.end).getTime() - new Date(s.start).getTime();
+        totals[s.activity] = (totals[s.activity] || 0) + dur;
+      });
+
+      const entries = Object.entries(totals);
+      const maxMs = Math.max(...entries.map(([, ms]) => ms));
+      const totalMs = entries.reduce((sum, [, ms]) => sum + ms, 0);
+
+      entries
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([activity, ms]) => {
+          const row = document.createElement("div");
+          row.className = "analytics-row";
+
+          const name = document.createElement("div");
+          name.className = "analytics-name";
+          name.textContent = activity;
+
+          const barWrap = document.createElement("div");
+          barWrap.className = "analytics-bar-wrap";
+          const bar = document.createElement("div");
+          bar.className = "analytics-bar";
+          const width = maxMs ? (ms / maxMs) * 100 : 0;
+          bar.style.width = `${width}%`;
+          barWrap.appendChild(bar);
+
+          const time = document.createElement("div");
+          time.className = "analytics-time";
+          time.textContent = formatHM(ms);
+
+          row.appendChild(name);
+          row.appendChild(barWrap);
+          row.appendChild(time);
+
+          analyticsListEl.appendChild(row);
+        });
+
+      analyticsTotalEl.textContent = `Total tracked today: ${formatHM(
+        totalMs
+      )}`;
+    }
+
+    function renderTimer() {
+      const running = getRunningSession();
+
+      if (!running) {
+        currentActivityTextEl.textContent = "No activity running";
+        timerDisplayEl.textContent = "00:00:00";
+        currentTimeRangeEl.textContent = "Start – End";
+        statusTextEl.textContent = "Idle";
+        statusDotEl.style.display = "none";
+        timerStatusChipEl.style.background =
+          "rgba(15, 23, 42, 0.30)";
+        return;
+      }
+
+      currentActivityTextEl.textContent = running.activity;
+      const startDate = new Date(running.start);
+      const now = new Date();
+      const elapsedMs = now.getTime() - startDate.getTime();
+      timerDisplayEl.textContent = formatHMS(elapsedMs);
+
+      currentTimeRangeEl.textContent = `${formatDay(startDate).slice(
+        0,
+        3
+      )}, ${formatDate(startDate)} • ${formatTime(
+        startDate
+      )} → now`;
+
+      statusTextEl.textContent = "Tracking";
+      statusDotEl.style.display = "inline-block";
+      timerStatusChipEl.style.background = "rgba(15, 23, 42, 0.40)";
+    }
+
+    function fullRender() {
+      renderTodayHeader();
+      renderActivities();
+      renderSessionsTable();
+      renderAnalytics();
+      renderTimer();
+    }
+
+    // ======== TIMER & SESSIONS ========
+
+    function startSession(activity) {
+      // If some session is already running, stop it first
+      const running = getRunningSession();
+      if (running) {
+        stopCurrentSession();
+      }
+
+      const now = new Date();
+      const session = {
+        id: Date.now(),
+        activity,
+        start: now.toISOString(),
+        end: null,
+      };
+
+      data.sessions.push(session);
+      currentSessionId = session.id;
+      saveData();
+
+      startTimerInterval();
+      fullRender();
+    }
+
+    function stopCurrentSession() {
+      if (currentSessionId == null) {
+        const running = getRunningSession();
+        if (!running) {
+          return;
+        }
+        currentSessionId = running.id;
+      }
+
+      const session = getSessionById(currentSessionId);
+      if (!session || session.end) {
+        currentSessionId = null;
+        stopTimerInterval();
+        fullRender();
+        return;
+      }
+
+      session.end = new Date().toISOString();
+      currentSessionId = null;
+      saveData();
+
+      stopTimerInterval();
+      fullRender();
+    }
+
+    function startTimerInterval() {
+      if (timerIntervalId) clearInterval(timerIntervalId);
+      timerIntervalId = setInterval(() => {
+        renderTimer();
+        renderSessionsTable(); // live duration for running row
+      }, 1000);
+    }
+
+    function stopTimerInterval() {
+      if (timerIntervalId) {
+        clearInterval(timerIntervalId);
+        timerIntervalId = null;
+      }
+    }
+
+    // ======== INIT & EVENTS ========
+
+    document
+      .getElementById("activity-form")
+      .addEventListener("submit", (e) => {
+        e.preventDefault();
+        const input = document.getElementById("activity-input");
+        const value = input.value.trim();
+        if (!value) return;
+        if (!data.activities.includes(value)) {
+          data.activities.push(value);
+          saveData();
+          renderActivities();
+        }
+        input.value = "";
+      });
+
+    // Initial load
+    loadData();
+
+    // Show today in header
+    renderTodayHeader();
+
+    // Recover running session on reload
+    const existingRunning = getRunningSession();
+    if (existingRunning) {
+      currentSessionId = existingRunning.id;
+      startTimerInterval();
+    }
+
+    fullRender();
+  </script>
+</body>
+</html>
