@@ -865,19 +865,20 @@
     const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzd-GjzoPEzQws2rUWmJ4u8hA8ZsHnzEJ4kqBNAhhgh4qmyyNbE8MCkpJC9Xf32qpBs/exec';
 
     async function syncAllSessionsToBackend() {
-      if (!BACKEND_URL) return;
-      try {
-        await fetch(BACKEND_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessions: data.sessions || [] })
-        });
-        // You can show a toast later if you want feedback
-      } catch (err) {
-        console.error('Sync to Sheets failed', err);
-      }
-    }
-
+  if (!BACKEND_URL) return;
+  try {
+    // use no-cors so the browser doesn't block cross-origin POST
+    await fetch(BACKEND_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ sessions: data.sessions || [] })
+    });
+    // We can't read the response in no-cors mode, but the request still reaches Apps Script
+  } catch (err) {
+    console.error('Sync to Sheets failed', err);
+  }
+}
 
     let currentSessionId = null;
     let timerIntervalId = null;
@@ -1643,4 +1644,5 @@
 </body>
 
 </html>
+
 
