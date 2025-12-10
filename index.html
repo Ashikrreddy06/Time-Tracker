@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>My Day Time Tracker</title>
@@ -29,6 +30,15 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
         sans-serif;
     }
+    @media (max-width: 400px) {
+  .panel {
+    padding: 8px 8px 10px;
+  }
+  .activities-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 
     body {
       min-height: 100vh;
@@ -101,7 +111,8 @@
 
     main {
       display: grid;
-      grid-template-columns: 1fr; /* MOBILE FIRST: single column */
+      grid-template-columns: 1fr;
+      /* MOBILE FIRST: single column */
       gap: 10px;
     }
 
@@ -111,6 +122,7 @@
         grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr);
         gap: 16px;
       }
+
       .today-info {
         text-align: right;
       }
@@ -120,6 +132,7 @@
       body {
         padding: 6px;
       }
+
       .app {
         border-radius: 12px;
         padding: 10px 10px 14px;
@@ -637,6 +650,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="app">
     <header>
@@ -701,12 +715,8 @@
           </div>
 
           <form class="activity-form" id="activity-form">
-            <input
-              id="activity-input"
-              type="text"
-              placeholder="Add new activity (e.g. Reading, Deep Work)"
-              autocomplete="off"
-            />
+            <input id="activity-input" type="text" placeholder="Add new activity (e.g. Reading, Deep Work)"
+              autocomplete="off" />
             <button type="submit" class="btn btn-primary btn-sm">
               + Add
             </button>
@@ -848,6 +858,23 @@
       activities: [],
       sessions: [], // { id, activity, start, end }
     };
+    // ======== BACKEND SYNC CONFIG ========
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzd-GjzoPEzQws2rUWmJ4u8hA8ZsHnzEJ4kqBNAhhgh4qmyyNbE8MCkpJC9Xf32qpBs/exec';
+
+    async function syncAllSessionsToBackend() {
+      if (!BACKEND_URL) return;
+      try {
+        await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessions: data.sessions || [] })
+        });
+        // You can show a toast later if you want feedback
+      } catch (err) {
+        console.error('Sync to Sheets failed', err);
+      }
+    }
+
 
     let currentSessionId = null;
     let timerIntervalId = null;
@@ -1381,7 +1408,7 @@
       data.sessions.push(session);
       currentSessionId = session.id;
       saveData();
-
+      syncAllSessionsToBackend();
       startTimerInterval();
       fullRender();
     }
@@ -1406,9 +1433,11 @@
       session.end = new Date().toISOString();
       currentSessionId = null;
       saveData();
+      syncAllSessionsToBackend();  // <— add this
 
       stopTimerInterval();
       fullRender();
+
     }
 
     function startTimerInterval() {
@@ -1487,6 +1516,7 @@
       }
 
       saveData();
+      syncAllSessionsToBackend();
       closeEditModal();
       fullRender();
     }
@@ -1508,6 +1538,7 @@
       }
 
       saveData();
+      syncAllSessionsToBackend();
       fullRender();
     }
 
@@ -1607,4 +1638,5 @@
     fullRender();
   </script>
 </body>
+
 </html>
