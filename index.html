@@ -63,10 +63,13 @@
     }
 
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(6px);
+}
+
     }
 
     .title {
@@ -1640,3 +1643,4 @@
 </body>
 
 </html>
+
