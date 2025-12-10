@@ -10,7 +10,7 @@
   <!-- Makes the top bar color match your app -->
   <meta name="theme-color" content="#6366f1" />
 
-  <!-- Tell Android browsers this is a PWA -->
+  <!-- PWA manifest (you already have this file) -->
   <link rel="manifest" href="manifest.json" />
 
   <!-- iOS: open as standalone app (no Safari UI) -->
@@ -18,7 +18,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="My Day Tracker" />
 
-  <!-- iOS home screen icon (you can change this later) -->
+  <!-- iOS home screen icon -->
   <link rel="apple-touch-icon" href="icon-192.png" />
 
   <style>
@@ -45,11 +45,11 @@
       max-width: 1100px;
       background: rgba(255, 255, 255, 0.96);
       border-radius: 18px;
-      padding: 14px 14px 18px;
+      padding: 12px 12px 16px;
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     header {
@@ -89,6 +89,14 @@
       display: block;
       font-size: 0.9rem;
       color: #111827;
+    }
+
+    .top-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+      justify-content: flex-end;
     }
 
     main {
@@ -308,6 +316,19 @@
       border: 1px solid #e5e7eb;
     }
 
+    .btn-outline {
+      background: #ffffff;
+      color: #4b5563;
+      border: 1px solid #d1d5db;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+    }
+
+    .btn-xs {
+      padding: 3px 6px;
+      font-size: 0.7rem;
+    }
+
     .btn-sm {
       padding: 6px 11px;
       font-size: 0.8rem;
@@ -395,6 +416,39 @@
     .mini-label {
       font-size: 0.7rem;
       color: #9ca3af;
+    }
+
+    /* Filter + export row */
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .filter-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .filter-select {
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      background: #ffffff;
+    }
+
+    .export-group {
+      display: inline-flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     /* Log section */
@@ -519,14 +573,89 @@
       color: #6b7280;
       margin-top: 2px;
     }
+
+    /* Modal for editing */
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+    }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 12px 14px;
+      width: 100%;
+      max-width: 320px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .modal-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 2px;
+    }
+
+    .modal-row {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-bottom: 4px;
+    }
+
+    .modal-row label {
+      font-size: 0.75rem;
+      color: #4b5563;
+    }
+
+    .modal-row input,
+    .modal-row select {
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      padding: 6px 8px;
+      font-size: 0.8rem;
+      width: 100%;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
   <div class="app">
     <header>
-      <div class="title">
-        <span>My Day Tracker</span>
-        <span class="title-badge">v1</span>
+      <div>
+        <div class="title">
+          <span>My Day Tracker</span>
+          <span class="title-badge">v2</span>
+        </div>
+        <div class="top-toolbar">
+          <button id="export-range-btn" class="btn btn-outline btn-xs">
+            Export range (CSV)
+          </button>
+          <button id="export-all-btn" class="btn btn-outline btn-xs">
+            Export all (CSV)
+          </button>
+          <button id="export-ics-btn" class="btn btn-outline btn-xs">
+            Export calendar (.ics)
+          </button>
+        </div>
       </div>
       <div class="today-info">
         <strong id="today-day"></strong>
@@ -597,11 +726,29 @@
           <div class="panel-header">
             <div>
               <div class="panel-title">
-                Today’s Sessions
+                Sessions
               </div>
               <div class="panel-subtitle">
                 Every start & stop is logged with date, time and duration.
               </div>
+            </div>
+          </div>
+
+          <div class="filter-row">
+            <div class="filter-group">
+              <span>Showing:</span>
+              <select id="range-select" class="filter-select">
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="last7">Last 7 days</option>
+                <option value="last30">Last 30 days</option>
+                <option value="all">All time</option>
+              </select>
+            </div>
+            <div class="export-group">
+              <button id="export-yesterday-btn" class="btn btn-outline btn-xs">
+                Yesterday CSV
+              </button>
             </div>
           </div>
 
@@ -614,6 +761,7 @@
                   <th>Start</th>
                   <th>End</th>
                   <th>Duration</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="sessions-body">
@@ -627,10 +775,10 @@
           <div class="panel-header">
             <div>
               <div class="panel-title">
-                Today’s Analytics
+                Analytics
               </div>
               <div class="panel-subtitle">
-                How you actually spent your hours today.
+                How you spent your time in the selected range.
               </div>
             </div>
             <div class="pill">
@@ -643,6 +791,42 @@
         </section>
       </div>
     </main>
+  </div>
+
+  <!-- Edit Session Modal -->
+  <div id="modal-backdrop" class="backdrop hidden">
+    <div class="modal">
+      <div class="modal-title">Edit session</div>
+
+      <div class="modal-row">
+        <label for="edit-activity">Activity</label>
+        <input id="edit-activity" type="text" />
+      </div>
+
+      <div class="modal-row">
+        <label for="edit-date">Date</label>
+        <input id="edit-date" type="date" />
+      </div>
+
+      <div class="modal-row">
+        <label>Start time</label>
+        <input id="edit-start" type="time" />
+      </div>
+
+      <div class="modal-row">
+        <label>End time</label>
+        <input id="edit-end" type="time" />
+      </div>
+
+      <small style="font-size:0.7rem;color:#6b7280;">
+        Tip: For "forgot to stop", set the correct end time. It will override the running session.
+      </small>
+
+      <div class="modal-actions">
+        <button id="edit-cancel" class="btn btn-ghost btn-xs">Cancel</button>
+        <button id="edit-save" class="btn btn-primary btn-xs">Save</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -667,6 +851,12 @@
 
     let currentSessionId = null;
     let timerIntervalId = null;
+
+    // 'today', 'yesterday', 'last7', 'last30', 'all'
+    let currentRange = "today";
+
+    // For editing
+    let editingSessionId = null;
 
     // ======== HELPERS ========
 
@@ -736,19 +926,154 @@
       );
     }
 
-    function getTodaySessions() {
-      const today = new Date();
-      return data.sessions.filter((s) =>
-        isSameDay(new Date(s.start), today)
+    function startOfDay(d) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    function daysAgo(num) {
+      const d = new Date();
+      d.setDate(d.getDate() - num);
+      return d;
+    }
+
+    function getSessionsInRange() {
+      const all = data.sessions || [];
+      const now = new Date();
+      const todayStart = startOfDay(now);
+
+      if (currentRange === "all") return all.slice().sort((a, b) => new Date(a.start) - new Date(b.start));
+
+      if (currentRange === "today") {
+        return all.filter((s) =>
+          isSameDay(new Date(s.start), now)
+        );
+      }
+
+      if (currentRange === "yesterday") {
+        const y = daysAgo(1);
+        return all.filter((s) =>
+          isSameDay(new Date(s.start), y)
+        );
+      }
+
+      if (currentRange === "last7" || currentRange === "last30") {
+        const days = currentRange === "last7" ? 7 : 30;
+        const from = startOfDay(daysAgo(days - 1)); // include today
+        return all.filter((s) => {
+          const d = new Date(s.start);
+          return d >= from && d <= now;
+        });
+      }
+
+      return all;
+    }
+
+    function getSessionsForDay(date) {
+      return (data.sessions || []).filter((s) =>
+        isSameDay(new Date(s.start), date)
       );
     }
 
-    function getSessionById(id) {
-      return data.sessions.find((s) => s.id === id);
+    function getRunningSession() {
+      return (data.sessions || []).find((s) => !s.end);
     }
 
-    function getRunningSession() {
-      return data.sessions.find((s) => !s.end);
+    function pad2(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function dateToDateInputValue(d) {
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    }
+
+    function dateToTimeInputValue(d) {
+      return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    }
+
+    function combineDateAndTime(dateStr, timeStr) {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const [hour, minute] = timeStr.split(":").map(Number);
+      return new Date(year, month - 1, day, hour, minute || 0, 0);
+    }
+
+    // CSV helpers
+    function csvEscape(value) {
+      const str = String(value ?? "");
+      const escaped = str.replace(/"/g, '""');
+      return `"${escaped}"`;
+    }
+
+    function sessionsToCSV(sessions) {
+      const header = [
+        "Activity",
+        "Date",
+        "Weekday",
+        "Start",
+        "End",
+        "DurationMinutes",
+      ];
+      const rows = sessions.map((s) => {
+        const start = new Date(s.start);
+        const end = s.end ? new Date(s.end) : null;
+        const durMinutes = end
+          ? Math.round((end.getTime() - start.getTime()) / 60000)
+          : "";
+        return [
+          csvEscape(s.activity),
+          csvEscape(formatDate(start)),
+          csvEscape(formatDay(start)),
+          csvEscape(formatTime(start)),
+          csvEscape(end ? formatTime(end) : ""),
+          csvEscape(durMinutes),
+        ].join(",");
+      });
+
+      return [header.join(","), ...rows].join("\r\n");
+    }
+
+    function downloadFile(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // ICS (calendar) helpers
+    function toICSDateTime(date) {
+      // UTC in basic format: YYYYMMDDTHHMMSSZ
+      const iso = date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+      return iso;
+    }
+
+    function sessionsToICS(sessions) {
+      const lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//MyDayTracker//EN",
+      ];
+
+      sessions.forEach((s) => {
+        if (!s.end) return; // skip running
+        const start = new Date(s.start);
+        const end = new Date(s.end);
+        const uid = `session-${s.id}@mydaytracker`;
+        lines.push("BEGIN:VEVENT");
+        lines.push(`UID:${uid}`);
+        lines.push(`DTSTAMP:${toICSDateTime(new Date())}`);
+        lines.push(`DTSTART:${toICSDateTime(start)}`);
+        lines.push(`DTEND:${toICSDateTime(end)}`);
+        lines.push(`SUMMARY:${s.activity}`);
+        lines.push("DESCRIPTION:Tracked with My Day Tracker");
+        lines.push("END:VEVENT");
+      });
+
+      lines.push("END:VCALENDAR");
+      return lines.join("\r\n");
     }
 
     // ======== RENDER UI ========
@@ -769,6 +1094,22 @@
     const analyticsListEl = document.getElementById("analytics-list");
     const analyticsTotalEl = document.getElementById("analytics-total");
 
+    const rangeSelectEl = document.getElementById("range-select");
+
+    const exportRangeBtn = document.getElementById("export-range-btn");
+    const exportAllBtn = document.getElementById("export-all-btn");
+    const exportYesterdayBtn = document.getElementById("export-yesterday-btn");
+    const exportICSBtn = document.getElementById("export-ics-btn");
+
+    // Modal elements
+    const modalBackdrop = document.getElementById("modal-backdrop");
+    const editActivityInput = document.getElementById("edit-activity");
+    const editDateInput = document.getElementById("edit-date");
+    const editStartInput = document.getElementById("edit-start");
+    const editEndInput = document.getElementById("edit-end");
+    const editCancelBtn = document.getElementById("edit-cancel");
+    const editSaveBtn = document.getElementById("edit-save");
+
     function renderTodayHeader() {
       const now = new Date();
       todayDayEl.textContent = formatDay(now);
@@ -783,7 +1124,7 @@
       activitiesListEl.innerHTML = "";
       if (!data.activities || data.activities.length === 0) return;
 
-      const todaySessions = getTodaySessions();
+      const rangeSessions = getSessionsInRange();
 
       data.activities.forEach((activity) => {
         const card = document.createElement("div");
@@ -804,9 +1145,9 @@
 
         const countSpan = document.createElement("span");
         countSpan.className = "activity-pill";
-        const count = todaySessions.filter((s) => s.activity === activity)
+        const count = rangeSessions.filter((s) => s.activity === activity)
           .length;
-        countSpan.textContent = count ? `${count}× today` : "Not yet";
+        countSpan.textContent = count ? `${count}× in range` : "No sessions";
 
         header.appendChild(nameSpan);
         header.appendChild(countSpan);
@@ -817,7 +1158,7 @@
         const mini = document.createElement("div");
         mini.className = "activity-mini-time";
 
-        const totalMs = todaySessions
+        const totalMs = rangeSessions
           .filter((s) => s.activity === activity && s.end)
           .reduce(
             (sum, s) =>
@@ -826,8 +1167,8 @@
           );
 
         mini.innerHTML = totalMs
-          ? `<span class="mini-label">Today:</span> ${formatHM(totalMs)}`
-          : `<span class="mini-label">Today:</span> 00h 00m`;
+          ? `<span class="mini-label">In range:</span> ${formatHM(totalMs)}`
+          : `<span class="mini-label">In range:</span> 00h 00m`;
 
         const btn = document.createElement("button");
         btn.className = "btn btn-ghost btn-sm";
@@ -852,55 +1193,73 @@
 
     function renderSessionsTable() {
       sessionsBodyEl.innerHTML = "";
-      const todaySessions = getTodaySessions();
+      const sessions = getSessionsInRange();
 
-      if (todaySessions.length === 0) {
+      if (sessions.length === 0) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 5;
+        td.colSpan = 6;
         td.className = "empty-state";
-        td.textContent = "No sessions tracked yet today. Start any activity!";
+        td.textContent =
+          "No sessions in this range. Track something today!";
         tr.appendChild(td);
         sessionsBodyEl.appendChild(tr);
         return;
       }
 
-      todaySessions
+      sessions
         .slice()
         .sort((a, b) => new Date(a.start) - new Date(b.start))
         .forEach((s) => {
           const tr = document.createElement("tr");
 
+          const startDate = new Date(s.start);
+          const endDate = s.end ? new Date(s.end) : null;
+
           const tdAct = document.createElement("td");
           tdAct.textContent = s.activity;
 
           const tdDate = document.createElement("td");
-          tdDate.textContent = `${formatDay(s.start).slice(
+          tdDate.textContent = `${formatDay(startDate).slice(
             0,
             3
-          )}, ${formatDate(s.start)}`;
+          )}, ${formatDate(startDate)}`;
 
           const tdStart = document.createElement("td");
-          tdStart.textContent = formatTime(s.start);
+          tdStart.textContent = formatTime(startDate);
 
           const tdEnd = document.createElement("td");
-          tdEnd.textContent = s.end ? formatTime(s.end) : "Running…";
+          tdEnd.textContent = endDate ? formatTime(endDate) : "Running…";
 
           const tdDur = document.createElement("td");
-          if (s.end) {
-            const durMs =
-              new Date(s.end).getTime() - new Date(s.start).getTime();
+          if (endDate) {
+            const durMs = endDate.getTime() - startDate.getTime();
             tdDur.textContent = formatHM(durMs);
           } else {
-            const durMs = Date.now() - new Date(s.start).getTime();
+            const durMs = Date.now() - startDate.getTime();
             tdDur.textContent = formatHM(durMs);
           }
+
+          const tdActions = document.createElement("td");
+          const editBtn = document.createElement("button");
+          editBtn.className = "btn btn-outline btn-xs";
+          editBtn.textContent = "Edit";
+          editBtn.addEventListener("click", () => openEditModal(s.id));
+
+          const delBtn = document.createElement("button");
+          delBtn.className = "btn btn-danger btn-xs";
+          delBtn.textContent = "Del";
+          delBtn.addEventListener("click", () => deleteSession(s.id));
+
+          tdActions.appendChild(editBtn);
+          tdActions.appendChild(delBtn);
 
           tr.appendChild(tdAct);
           tr.appendChild(tdDate);
           tr.appendChild(tdStart);
           tr.appendChild(tdEnd);
           tr.appendChild(tdDur);
+          tr.appendChild(tdActions);
           sessionsBodyEl.appendChild(tr);
         });
     }
@@ -909,12 +1268,12 @@
       analyticsListEl.innerHTML = "";
       analyticsTotalEl.textContent = "";
 
-      const todaySessions = getTodaySessions();
-      const finished = todaySessions.filter((s) => s.end);
+      const sessions = getSessionsInRange();
+      const finished = sessions.filter((s) => s.end);
 
       if (finished.length === 0) {
         analyticsListEl.innerHTML =
-          '<div class="empty-state">Finish at least one session to see your analytics.</div>';
+          '<div class="empty-state">Finish at least one session in this range to see analytics.</div>';
         return;
       }
 
@@ -958,7 +1317,7 @@
           analyticsListEl.appendChild(row);
         });
 
-      analyticsTotalEl.textContent = `Total tracked today: ${formatHM(
+      analyticsTotalEl.textContent = `Total tracked in range: ${formatHM(
         totalMs
       )}`;
     }
@@ -1006,7 +1365,6 @@
     // ======== TIMER & SESSIONS ========
 
     function startSession(activity) {
-      // If some session is already running, stop it first
       const running = getRunningSession();
       if (running) {
         stopCurrentSession();
@@ -1037,7 +1395,7 @@
         currentSessionId = running.id;
       }
 
-      const session = getSessionById(currentSessionId);
+      const session = data.sessions.find((s) => s.id === currentSessionId);
       if (!session || session.end) {
         currentSessionId = null;
         stopTimerInterval();
@@ -1068,6 +1426,91 @@
       }
     }
 
+    // ======== EDIT & DELETE ========
+
+    function openEditModal(sessionId) {
+      const session = data.sessions.find((s) => s.id === sessionId);
+      if (!session) return;
+
+      editingSessionId = sessionId;
+
+      const start = new Date(session.start);
+      const end = session.end ? new Date(session.end) : new Date();
+
+      editActivityInput.value = session.activity;
+      editDateInput.value = dateToDateInputValue(start);
+      editStartInput.value = dateToTimeInputValue(start);
+      editEndInput.value = dateToTimeInputValue(end);
+
+      modalBackdrop.classList.remove("hidden");
+    }
+
+    function closeEditModal() {
+      editingSessionId = null;
+      modalBackdrop.classList.add("hidden");
+    }
+
+    function applyEdit() {
+      if (editingSessionId == null) return;
+      const session = data.sessions.find((s) => s.id === editingSessionId);
+      if (!session) {
+        closeEditModal();
+        return;
+      }
+
+      const activity = editActivityInput.value.trim() || session.activity;
+      const dateStr = editDateInput.value;
+      const startStr = editStartInput.value;
+      const endStr = editEndInput.value;
+
+      if (!dateStr || !startStr || !endStr) {
+        alert("Please fill date, start time and end time.");
+        return;
+      }
+
+      const start = combineDateAndTime(dateStr, startStr);
+      const end = combineDateAndTime(dateStr, endStr);
+
+      if (end.getTime() <= start.getTime()) {
+        alert("End time must be after start time.");
+        return;
+      }
+
+      session.activity = activity;
+      session.start = start.toISOString();
+      session.end = end.toISOString();
+
+      // If this was considered running, clear it
+      if (currentSessionId === session.id) {
+        currentSessionId = null;
+        stopTimerInterval();
+      }
+
+      saveData();
+      closeEditModal();
+      fullRender();
+    }
+
+    function deleteSession(sessionId) {
+      const session = data.sessions.find((s) => s.id === sessionId);
+      if (!session) return;
+
+      const ok = confirm(
+        "Delete this session? This cannot be undone."
+      );
+      if (!ok) return;
+
+      data.sessions = data.sessions.filter((s) => s.id !== sessionId);
+
+      if (currentSessionId === sessionId) {
+        currentSessionId = null;
+        stopTimerInterval();
+      }
+
+      saveData();
+      fullRender();
+    }
+
     // ======== INIT & EVENTS ========
 
     document
@@ -1085,10 +1528,73 @@
         input.value = "";
       });
 
+    rangeSelectEl.addEventListener("change", () => {
+      currentRange = rangeSelectEl.value;
+      fullRender();
+    });
+
+    // Export buttons
+    exportRangeBtn.addEventListener("click", () => {
+      const sessions = getSessionsInRange();
+      if (!sessions.length) {
+        alert("No sessions in this range to export.");
+        return;
+      }
+      const csv = sessionsToCSV(sessions);
+      downloadFile("time-tracker-range.csv", csv, "text/csv");
+    });
+
+    exportAllBtn.addEventListener("click", () => {
+      const sessions = data.sessions || [];
+      if (!sessions.length) {
+        alert("No sessions to export yet.");
+        return;
+      }
+      const csv = sessionsToCSV(sessions);
+      downloadFile("time-tracker-all.csv", csv, "text/csv");
+    });
+
+    exportYesterdayBtn.addEventListener("click", () => {
+      const y = daysAgo(1);
+      const sessions = getSessionsForDay(y);
+      if (!sessions.length) {
+        alert("No sessions recorded yesterday.");
+        return;
+      }
+      const csv = sessionsToCSV(sessions);
+      downloadFile("time-tracker-yesterday.csv", csv, "text/csv");
+    });
+
+    exportICSBtn.addEventListener("click", () => {
+      const sessions = data.sessions || [];
+      const finished = sessions.filter((s) => s.end);
+      if (!finished.length) {
+        alert("No finished sessions to export to calendar.");
+        return;
+      }
+      const ics = sessionsToICS(finished);
+      downloadFile("time-tracker-calendar.ics", ics, "text/calendar");
+    });
+
+    // Modal events
+    editCancelBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeEditModal();
+    });
+
+    editSaveBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      applyEdit();
+    });
+
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) {
+        closeEditModal();
+      }
+    });
+
     // Initial load
     loadData();
-
-    // Show today in header
     renderTodayHeader();
 
     // Recover running session on reload
